@@ -25,7 +25,7 @@ void Flags::setFromCommandLine(int argc, char* argv[]) {
     if (strcmp(arg, "--help") == 0) {
       printHelp();
       exit(0);
-    } else if (strcmp(arg, "--v8-flags") == 0) {
+    } else if (strstr(arg, "--v8-flags") == arg) {
       const char* p = strchr(arg, '=');
       if (p == NULL) {
         // Have V8 print help text if no flags are provided.
