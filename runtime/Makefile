@@ -52,6 +52,11 @@ download-v8:
 	@echo "Extracting..."
 	@unzip $(V8_PREBUILD_PACKAGE)
 
+RUNTIME_SRC := $(wildcard *.cpp)
+
+shell: $(RUNTIME_SRC)
+	$(CC) -o shell -lv8 $(RUNTIME_SRC)
+
 .PHONY: clean
 clean:
 	@cd v8; scons -c; rm *.a
