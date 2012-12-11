@@ -52,10 +52,10 @@ download-v8:
 	@echo "Extracting..."
 	@unzip $(V8_PREBUILD_PACKAGE)
 
-RUNTIME_SRC := $(wildcard *.cpp)
+RUNTIME_SRC := $(wildcard src/*.cpp)
 
 shell: $(RUNTIME_SRC)
-	$(CC) -o shell -lv8 $(RUNTIME_SRC)
+	$(CXX) -o shell -L v8/ -lv8 $(RUNTIME_SRC)
 
 .PHONY: clean
 clean:
