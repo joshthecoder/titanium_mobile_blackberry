@@ -10,6 +10,18 @@
     true && $.print(msg);
   }
 
+  // --- Path ---
+  //
+  // Some path handling utilities used internally.
+  var path = {
+    // Extract the file extension from a path.
+    //     path('foo.js') -> '.js'
+    extname: function(path) {
+      var index = path.lastIndexOf('.');
+      return (index && path.substr(index)) || '';
+    }
+  }
+
 
   // --- Modules ---
   //
@@ -19,7 +31,7 @@
   // are supported such as JavaScript, native extensions, and JSON.
 
   function Module(id, parent) {
-    this.id = id;
+    this.id = this.filename = id; // TODO(josh): can we merge id and filename?
     this.parent = parent;
   }
 
@@ -28,11 +40,60 @@
   // listed in the array of search paths.
   Module._paths = [ ];
 
+  // Modules are only executed once when first required.
+  // The cache stores the executed module for any future requests.
+  Module._cache = { };
+
   Module._resolveFilename = function(request, parent) {
+    return 'foo.so';
   }
 
-  Module.prototype.require = function(req) {
-    debug('require(' + req + ')');
+  Module._extensions = { };
+
+  Module._extensions['.js'] = function(filename) {
+    debug('Load JavaScript module: ' + filename);
+  }
+
+  Module._extensions['.json'] = function(filename) {
+    debug('Load JSON module: ' + filename);
+  }
+
+  Module._extensions['.so'] = function(filename) {
+    debug('Load native extension module: ' + filename);
+  }
+
+  Module.prototype.require = function(request) {
+    debug('require(' + request + ')');
+
+    var filename = Module._resolveFilename(request, this);
+
+    var module = Module._cache[filename];
+    if (module) {
+      return module.exports;
+    }
+
+    module = Module._cache[filename] = new Module(filename, this);
+
+    var loadFailed = true;
+    try {
+      module.load();
+      loadFailed = false;
+    } finally {
+      if (loadFailed) {
+        delete Module._cache[filename];
+      }
+    }
+
+    return module.exports;
+  }
+
+  Module.prototype.load = function() {
+    var ext = path.extname(this.filename) || '.js';
+
+    var loader = Module._extensions[ext];
+    if (!loader) throw 'Unknown module extension: ' + ext;
+
+    return loader(this.filename);
   }
 
   // Setup the root module and the global require.
@@ -42,5 +103,6 @@
 
   // --- test ---
 
-  require('foo');
+  var foo = require('foo');
+  debug('foo: ' + JSON.stringify(foo));
 });
