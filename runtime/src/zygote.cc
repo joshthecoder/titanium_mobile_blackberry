@@ -16,7 +16,7 @@ static Handle<Value> print(const Arguments& args) {
   return Undefined();
 }
 
-// $.runScript(source)
+// $.runScript(source, [filename])
 //
 // Compile and run the script source in the current
 // context returning the resulting value.
@@ -27,10 +27,14 @@ static Handle<Value> run_script(const Arguments& args) {
     return ThrowException(Exception::Error(String::NewSymbol("No source code provided.")));
   }
 
+  Local<String> source, filename;
+  source = args[0]->ToString(),
+  filename = args.Length() > 1 ? args[1]->ToString() : String::New("<script>");
+
   // Catch any exceptions thrown while running script.
   TryCatch try_catch;
 
-  Local<Script> script = Script::Compile(args[0]->ToString());
+  Local<Script> script = Script::Compile(source, filename);
   if (script.IsEmpty()) {
     return try_catch.ReThrow();
   }
