@@ -1,10 +1,13 @@
 #include "zygote.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "os.h"
 
 using namespace v8;
 
-// zygote.print([message])
+// $.print([message])
 //
 // Prints a message to stdout and appends a newline.
 static Handle<Value> print(const Arguments& args) {
@@ -13,7 +16,7 @@ static Handle<Value> print(const Arguments& args) {
   return Undefined();
 }
 
-// zygote.runScript(source)
+// $.runScript(source)
 //
 // Compile and run the script source in the current
 // context returning the resulting value.
@@ -40,6 +43,48 @@ static Handle<Value> run_script(const Arguments& args) {
   return handleScope.Close(result);
 }
 
+// $.readFile(path)
+//
+// Reads in the entire contents of a file.
+static Handle<Value> read_file(const Arguments& args) {
+  HandleScope handle_scope;
+
+  if (args.Length() < 1) {
+    return ThrowException(Exception::Error(String::New("Missing file path.")));
+  }
+
+  String::Utf8Value path(args[0]);
+
+  int fd = os_fs_open(*path, OS_FS_RDONLY);
+  if (fd == -1) {
+    return ThrowException(Exception::Error(String::New("Failed to open file.")));
+  }
+
+  struct os_fs_info file_info;
+  if (os_fs_get_info(fd, &file_info)) {
+    return ThrowException(Exception::Error(String::New("Failed to get file info.")));
+  }
+
+  printf("file size is %i\n", file_info.size);
+  if (file_info.size <= 0) {
+    // If file has no content, return an empty string.
+    return handle_scope.Close(String::New(""));
+  }
+
+  void* data = malloc(file_info.size);
+  int length = os_fs_read(fd, data, 0, file_info.size);
+  os_fs_close(fd);
+  if (length == -1) {
+    return ThrowException(Exception::Error(String::New("Error reading file content.")));
+  }
+
+  // TODO(josh): return a proper Buffer type to better handle binary data.
+  Local<String> buffer = String::New((char*)data, length);
+  free(data);
+
+  return handle_scope.Close(buffer);
+}
+
 Handle<Object> zygote_create() {
   HandleScope handleScope;
 
@@ -47,6 +92,7 @@ Handle<Object> zygote_create() {
 
   zygote->Set(String::NewSymbol("print"), FunctionTemplate::New(print)->GetFunction());
   zygote->Set(String::NewSymbol("runScript"), FunctionTemplate::New(run_script)->GetFunction());
+  zygote->Set(String::NewSymbol("readFile"), FunctionTemplate::New(read_file)->GetFunction());
 
   return handleScope.Close(zygote);
 }
