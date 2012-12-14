@@ -41,7 +41,7 @@ static void boot() {
   Persistent<Context> context = Context::New();
   Context::Scope contextScope(context);
 
-  Local<Script> bootScript = load_script("lib/boot.js");
+  Local<Script> bootScript = load_script("zygote.js");
   if (bootScript.IsEmpty()) {
     printf("Unable to load boot script.\n");
     exit(1);
@@ -49,6 +49,7 @@ static void boot() {
 
   Local<Function> bootFunc = Local<Function>::Cast(bootScript->Run());
   Handle<Value> args[] = { zygote_create() };
+  context->Global()->Set(String::NewSymbol("global"), context->Global());
   bootFunc->Call(context->Global(), 1, args);
 }
 

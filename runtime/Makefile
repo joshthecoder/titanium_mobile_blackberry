@@ -54,7 +54,20 @@ download-v8:
 
 RUNTIME_SRC := $(wildcard src/*.cc)
 
-shell: $(RUNTIME_SRC)
+define inject_core_js
+	echo "global.$2 = {};" >> $3
+	echo "(function(exports) {" >> $3
+	cat $1 >> $3
+	echo "})(global.$2);" >> $3
+endef
+
+zygote.js: $(wildcard lib/*.js) $(wildcard lib/.*.js)
+	@cat lib/.header.js > $@
+	@$(foreach js,$(wildcard lib/*.js),$(call inject_core_js,$(js),$(patsubst lib/%.js,%,$(js)),$@);)
+	@cat lib/.main.js >> $@
+	@cat lib/.footer.js >> $@
+
+shell: $(RUNTIME_SRC) zygote.js
 	$(CXX) -o shell -L v8/ -lv8 $(RUNTIME_SRC)
 
 .PHONY: clean

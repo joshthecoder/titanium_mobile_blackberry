@@ -69,7 +69,6 @@ static Handle<Value> read_file(const Arguments& args) {
     return ThrowException(Exception::Error(String::New("Failed to get file info.")));
   }
 
-  printf("file size is %i\n", file_info.size);
   if (file_info.size <= 0) {
     // If file has no content, return an empty string.
     return handle_scope.Close(String::New(""));
@@ -89,6 +88,22 @@ static Handle<Value> read_file(const Arguments& args) {
   return handle_scope.Close(buffer);
 }
 
+Handle<Value> is_file(const Arguments& args) {
+  HandleScope handle_scope;
+
+  if (args.Length() < 1) {
+    return ThrowException(Exception::Error(String::New("No path provided.")));
+  }
+
+  String::Utf8Value path(args[0]);
+
+  struct os_fs_info info;
+  os_fs_get_info_path(*path, &info);
+  bool is_file = info.type == OS_FS_REGULAR; 
+
+  return handle_scope.Close(Boolean::New(is_file));
+}
+
 Handle<Object> zygote_create() {
   HandleScope handleScope;
 
@@ -97,6 +112,7 @@ Handle<Object> zygote_create() {
   zygote->Set(String::NewSymbol("print"), FunctionTemplate::New(print)->GetFunction());
   zygote->Set(String::NewSymbol("runScript"), FunctionTemplate::New(run_script)->GetFunction());
   zygote->Set(String::NewSymbol("readFile"), FunctionTemplate::New(read_file)->GetFunction());
+  zygote->Set(String::NewSymbol("isFile"), FunctionTemplate::New(is_file)->GetFunction());
 
   return handleScope.Close(zygote);
 }
