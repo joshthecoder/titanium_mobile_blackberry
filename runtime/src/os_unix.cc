@@ -11,17 +11,41 @@ int os_fs_close(int fd) {
   return close(fd);
 }
 
-int os_fs_get_info(int fd, struct os_fs_info* info) {
-  struct stat stat;
-  if (fstat(fd, &stat)) {
-    return -1;
+static void stat_to_info(struct stat* stat, struct os_fs_info* info) {
+  int type;
+  switch(stat->st_mode & S_IFMT) {
+   case S_IFREG:
+     type = OS_FS_REGULAR;
+     break;
+   case S_IFDIR:
+     type = OS_FS_DIRECTORY;
+     break;
+   default:
+     type = OS_FS_UNKNOWN;
   }
 
-  info->size = stat.st_size;
-  info->last_access = stat.st_atime;
-  info->last_mod = stat.st_mtime;
-  info->last_change = stat.st_ctime;
+  info->size = stat->st_size;
+  info->type = type;
+  info->last_access = stat->st_atime;
+  info->last_mod = stat->st_mtime;
+  info->last_change = stat->st_ctime;
+}
 
+int os_fs_get_info(int fd, struct os_fs_info* info) {
+  struct stat st;
+  if (fstat(fd, &st)) {
+    return -1;
+  }
+  stat_to_info(&st, info);
+  return 0;
+}
+
+int os_fs_get_info_path(const char* path, struct os_fs_info* info) {
+  struct stat st;
+  if (stat(path, &st)) {
+    return -1;
+  }
+  stat_to_info(&st, info);
   return 0;
 }
 
