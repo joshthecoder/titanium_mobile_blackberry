@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
-// os - operating system abstractions
+// --- os: operating system abstractions ---
 
 // Aliases of platform specific file access modes.
 enum os_fs_access_modes {
@@ -41,5 +41,9 @@ int os_fs_get_info_path(const char* path, struct os_fs_info* info);
 // The number of bytes read will be less than or equal to length.
 // Returns the number of bytes read or -1 on error.
 int os_fs_read(int fd, void* data, int offset, int length);
+
+void* os_dl_open(const char* path);
+void* os_dl_sym(void* handle, const char* symbol);
+void os_dl_close(void* handle);
 
 #endif

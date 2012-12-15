@@ -1,5 +1,6 @@
 #include "os.h"
 
+#include <dlfcn.h>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -55,5 +56,17 @@ int os_fs_read(int fd, void* data, int offset, int length) {
     perror("last error");
   }
   return bytes_read;
+}
+
+void* os_dl_open(const char* path) {
+  return dlopen(path, RTLD_LAZY);
+}
+
+void* os_dl_sym(void* handle, const char* symbol) {
+  return dlsym(handle, symbol);
+}
+
+void os_dl_close(void* handle) {
+  dlclose(handle);
 }
 
