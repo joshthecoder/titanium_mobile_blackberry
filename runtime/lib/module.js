@@ -118,12 +118,11 @@ Module._extensions['.js'] = function(module) {
   return wrapper.apply(module.exports, locals);
 }
 
-Module._extensions['.json'] = function(filename) {
-  debug('Load JSON module: ' + filename);
+Module._extensions['.json'] = function(module) {
 }
 
-Module._extensions['.so'] = function(filename) {
-  debug('Load native extension module: ' + filename);
+Module._extensions['.so'] = function(module) {
+  module.exports = $.loadExtension(module.filename);
 }
 
 Module.prototype.require = function(request) {

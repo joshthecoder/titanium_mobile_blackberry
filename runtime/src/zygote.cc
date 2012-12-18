@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "os.h"
+#include "runtime.h"
 
 using namespace v8;
 
@@ -88,7 +89,7 @@ static Handle<Value> read_file(const Arguments& args) {
   return handle_scope.Close(buffer);
 }
 
-Handle<Value> is_file(const Arguments& args) {
+static Handle<Value> is_file(const Arguments& args) {
   HandleScope handle_scope;
 
   if (args.Length() < 1) {
@@ -104,6 +105,34 @@ Handle<Value> is_file(const Arguments& args) {
   return handle_scope.Close(Boolean::New(is_file));
 }
 
+static Handle<Value> load_extension(const Arguments& args) {
+  HandleScope handle_scope;
+
+  if (args.Length() < 1) {
+    return ThrowException(Exception::Error(String::New("No path provided to library.")));
+  }
+
+  String::Utf8Value dl_path(args[0]);
+
+  void* dl_handle = os_dl_open(*dl_path);
+  if (!dl_handle) {
+    return ThrowException(Exception::Error(String::New("Could not open library.")));
+  }
+
+  runtime_extension* ext = (runtime_extension*) os_dl_sym(dl_handle, "extension");
+  if (ext == NULL) {
+    return ThrowException(Exception::Error(String::New("No 'extension' symbol found in library.")));
+  }
+
+  if (ext->api_version != RUNTIME_API_VERSION) {
+    return ThrowException(Exception::Error(String::New("Extension not API compatible with runtime.")));
+  }
+
+  Handle<Value> exports = ext->export_func();
+
+  return handle_scope.Close(exports);
+}
+
 Handle<Object> zygote_create() {
   HandleScope handleScope;
 
@@ -113,6 +142,7 @@ Handle<Object> zygote_create() {
   zygote->Set(String::NewSymbol("runScript"), FunctionTemplate::New(run_script)->GetFunction());
   zygote->Set(String::NewSymbol("readFile"), FunctionTemplate::New(read_file)->GetFunction());
   zygote->Set(String::NewSymbol("isFile"), FunctionTemplate::New(is_file)->GetFunction());
+  zygote->Set(String::NewSymbol("loadExtension"), FunctionTemplate::New(load_extension)->GetFunction());
 
   return handleScope.Close(zygote);
 }
