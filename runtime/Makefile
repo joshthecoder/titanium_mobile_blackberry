@@ -67,8 +67,17 @@ zygote.js: $(wildcard lib/*.js) $(wildcard lib/.*.js)
 	@cat lib/.main.js >> $@
 	@cat lib/.footer.js >> $@
 
-shell: $(RUNTIME_SRC) zygote.js
-	$(CXX) -o shell -L v8/ -lv8 $(RUNTIME_SRC)
+libruntime.dylib: $(RUNTIME_SRC) zygote.js
+	$(CXX) -shared -o $@ -I v8/include -I include/ -L. -lv8 $(RUNTIME_SRC)
+
+runner: $(wildcard tests/*) libruntime.dylib
+	$(CXX) -o $@ -I v8/include -I include/ -L. -lruntime -lv8 tests/tests.c tests/runner.c
+
+tests: runner
+	./runner
+
+shell: libruntime.dylib shell.c
+	$(CXX) -o $@ shell.c -Iinclude/ -Iv8/include -L. -lruntime -lv8
 
 .PHONY: clean
 clean:
