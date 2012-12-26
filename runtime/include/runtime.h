@@ -1,15 +1,27 @@
 #ifndef TI_RUNTIME_H
 #define TI_RUNTIME_H
 
-#include <v8.h>
-
-int rt_start(int argc, char* argv[]);
-
 // This version is incremented whenever API
 // compatibility breaks with extensions. Runtime
 // will refuse to load any extension with a non-matching
 // API version.
 #define RUNTIME_API_VERSION 0x0001
+
+typedef void* rt_value;
+typedef rt_value rt_object;
+typedef rt_value rt_string;
+typedef rt_value rt_number;
+typedef rt_object rt_function;
+
+// Called by the embedding application to initialize
+// the runtime and evaluate the main entry script.
+int rt_start(int argc, char* argv[]);
+
+typedef void (*rt_run_loop)(void);
+
+// Set the run loop function which is called
+// once the main entry script has finished evaluating.
+void rt_set_run_loop(rt_run_loop loop);
 
 struct runtime_extension {
   // The runtime API version this extension is compatible with.
@@ -24,7 +36,7 @@ struct runtime_extension {
 
   // Returns an exports object containing the extension's public APIs.
   // This should cause no side effects and may be called multiple times.
-  v8::Handle<v8::Object> (*export_func)(void);
+  rt_value (*export_func)(void);
 };
 
 #define RUNTIME_EXTENSION(name, init_func, export_func) \
@@ -33,12 +45,6 @@ struct runtime_extension {
     init_func,                           \
     export_func                          \
   };
-
-typedef void* rt_value;
-typedef rt_value rt_object;
-typedef rt_value rt_string;
-typedef rt_value rt_number;
-typedef rt_object rt_function;
 
 // A persistent handle that keeps a runtime object
 // alive until the reference count reaches zero.

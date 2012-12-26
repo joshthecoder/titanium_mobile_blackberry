@@ -1,6 +1,8 @@
 #ifndef RUNTIME_TESTS_H
 #define RUNTIME_TESTS_H
 
+#include <stdio.h>
+
 // A simple unit testing framework.
 
 int run_tests();

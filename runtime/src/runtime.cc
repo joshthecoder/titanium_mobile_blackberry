@@ -35,11 +35,27 @@ static Local<Script> load_script(const char* path) {
   return handleScope.Close(Script::Compile(source));
 }
 
-static void boot() {
-  HandleScope handleScope;
+static rt_run_loop run_loop = NULL;
 
+void rt_set_run_loop(rt_run_loop loop) {
+  run_loop = loop;
+}
+
+int rt_start(int argc, char* argv[]) {
+  Flags::setFromCommandLine(argc, argv);
+
+  // Set any V8 flags from command line before initializing.
+  const char* flags = Flags::current().v8Flags();
+  if (flags != 0) {
+    V8::SetFlagsFromString(flags, strlen(flags));
+  }
+  V8::Initialize();
+
+  // Create the main context and handle scope
+  // before creating any V8 objects.
   Persistent<Context> context = Context::New();
-  Context::Scope contextScope(context);
+  Context::Scope context_scope(context);
+  HandleScope handle_scope;
 
   Local<Script> bootScript = load_script("zygote.js");
   if (bootScript.IsEmpty()) {
@@ -51,19 +67,10 @@ static void boot() {
   Handle<Value> args[] = { zygote_create() };
   context->Global()->Set(String::NewSymbol("global"), context->Global());
   bootFunc->Call(context->Global(), 1, args);
-}
 
-int runtime_start(int argc, char* argv[]) {
-  Flags::setFromCommandLine(argc, argv);
-
-  // Set any V8 flags from command line before initializing.
-  const char* flags = Flags::current().v8Flags();
-  if (flags != 0) {
-    V8::SetFlagsFromString(flags, strlen(flags));
+  if (run_loop) {
+    run_loop();
   }
-  V8::Initialize();
-
-  boot();
 
   return 0;
 }

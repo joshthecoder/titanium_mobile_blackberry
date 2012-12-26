@@ -128,9 +128,9 @@ static Handle<Value> load_extension(const Arguments& args) {
     return ThrowException(Exception::Error(String::New("Extension not API compatible with runtime.")));
   }
 
-  Handle<Value> exports = ext->export_func();
+  rt_value exports = ext->export_func();
 
-  return handle_scope.Close(exports);
+  return handle_scope.Close(Handle<Value>((Value*) exports));
 }
 
 Handle<Object> zygote_create() {

@@ -1,6 +1,6 @@
 #include "runtime.h"
 
 int main(int argc, char* argv[]) {
-  return runtime_start(argc, argv);
+  return rt_start(argc, argv);
 }
 
