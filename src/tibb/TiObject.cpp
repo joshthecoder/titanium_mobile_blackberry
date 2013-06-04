@@ -49,8 +49,7 @@ TiObject::TiObject(const char* objectName)
 }
 
 TiObject::TiObject(const char* objectName, Handle<Value> value)
-    : value_(Persistent<Value>::New(value)),
-      name_(objectName),
+    : name_(objectName),
       isInitialized_(false),
       parentObject_(NULL),
       nativeObject_(NULL),
@@ -62,14 +61,13 @@ TiObject::TiObject(const char* objectName, Handle<Value> value)
     debugMembers_ = "";
     cstrdebugMembers_ = debugMembers_.c_str();
 #endif // _TI_DEBUG_
+
+    forceSetValue(value);
 }
 
 TiObject::~TiObject()
 {
-    if (!value_.IsEmpty())
-    {
-        value_.Dispose();
-    }
+    clearValue();
     if (nativeObject_ != NULL)
     {
         nativeObject_->release();
@@ -335,14 +333,31 @@ VALUE_MODIFY TiObject::setValue(Handle<Value> value)
             return modify;
         }
     }
-    value_ = Persistent<Value>::New(value);
-    return modify;
+    return forceSetValue(value);
+}
+
+static void WeakCallback(Persistent<Value> object, void* parameter)
+{
+    TiObject* obj = static_cast<TiObject*>(parameter);
+    Q_ASSERT(object == obj->getValue());
+    Q_ASSERT(object.IsNearDeath());
+    obj->release();
 }
 
 VALUE_MODIFY TiObject::forceSetValue(Handle<Value> value)
 {
+    clearValue();
     value_ = Persistent<Value>::New(value);
+    value_.MakeWeak(this, WeakCallback);
     return VALUE_MODIFY_ALLOW;
+}
+
+void TiObject::clearValue()
+{
+    if (value_.IsEmpty()) return;
+    value_.ClearWeak();
+    value_.Dispose();
+    value_.Clear();
 }
 
 bool TiObject::userCanAddMember(const char*) const

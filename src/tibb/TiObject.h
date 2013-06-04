@@ -121,6 +121,7 @@ public:
     virtual Handle<Value> evaluate() const;
     virtual VALUE_MODIFY setValue(Handle<Value> value);
     virtual VALUE_MODIFY forceSetValue(Handle<Value> value);
+    void clearValue();
     virtual bool hasMembers() const;
     virtual bool isFunction() const;
     virtual bool canAddMembers() const;
